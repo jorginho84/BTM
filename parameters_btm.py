@@ -10,13 +10,11 @@ class Parameters:
         List of structural parameters
     """
     
-    def __init__(self,gammas_x,mar_workload,dmar_workload,dont_workload,s_info,delta,
-                 sigma_foc_score):
+    def __init__(self,gammas_x,mar_workload,dmar_workload,dont_workload,shocks,delta):
         
         self.gammas_x = gammas_x
         self.mar_workload = mar_workload
         self.dmar_workload = dmar_workload
         self.dont_workload = dont_workload
-        self.s_info = s_info
+        self.shocks = shocks
         self.delta = delta
-        self.sigma_foc_score = sigma_foc_score

@@ -42,7 +42,8 @@ dont_workload = np.load('dont_work_model.npy', allow_pickle=True)
 
 s_info = 0.5
 
-sigma_foc_score = np.random.randint(5,10,(3000))
+#sigma_foc_score = np.random.randint(5,10,(3000))
+sigma_foc_score = 15
 
 ######################## **** **** ########################
 
@@ -103,6 +104,9 @@ btm_noise = model.btm_noise()
 btm_false = model.btmfalse(btm_noise,supply_salary)
 print(btm_false)
 
+moment_nea_vms = np.zeros(N)
+moment_nea_vms[np.logical_and(btm_score == 0, btm_noise[0] == 1)] = 1
+
 #disuti_texamp = np.zeros(N)
         
 #disuti_texamp[np.logical_and(work_d == 1, btm[1] == 1)] = 1
@@ -123,7 +127,7 @@ utilidad = model.utility(income,work_d,btm)
 print(utilidad)
 
 print("Utility simdata")
-modelSD = sd.SimData(N,model)
+modelSD = sd.SimData(param0,N,model)
 
 util_all = modelSD.util(work_d,btm_d)
 print(util_all[0])
@@ -134,9 +138,11 @@ print(data_sim_btm["Opt Utility"])
 print(data_sim_btm["Opt Work"])
 print(data_sim_btm["Opt BTM"])
 print(data_sim_btm["Opt Income"])
+print(data_sim_btm["BTM noise"])
 
 btm_opt = data_sim_btm["Opt BTM"]
 work_opt = data_sim_btm["Opt Work"]
+btm_noise_opt = data_sim_btm["BTM noise"]
 
 
 

@@ -28,6 +28,8 @@ class Utility(object):
         # don't forget to definite X: characteristics
         self.X = X
         self.year = year
+        
+        
     #def economic_status(self,fps):
         
         #dc = 
@@ -109,7 +111,7 @@ class Utility(object):
         """
         psfe_false = np.zeros(self.N)
         
-        v_fs = np.random.normal(0, self.param.sigma_foc_score, self.N)
+        v_fs = np.random.normal(0, self.param.shocks[0], self.N)
         
         psfe_false = self.psfe + v_fs
         
@@ -118,7 +120,7 @@ class Utility(object):
         get_bonusf = np.where(((psfe_false<=98) & (self.year == 2012)) | ((psfe_false<=98) & (self.year == 2013)) | ((psfe_false<=104) & (self.year == 2014)) | 
                              ((psfe_false<=113) & (self.year == 2015)), 1, get_bonusf)
         
-        return get_bonusf
+        return [get_bonusf, psfe_false]
     
     def btmfalse(self,btm_noise,supply_salary):
         """
@@ -138,7 +140,7 @@ class Utility(object):
         bonusf = np.where((222909 < supply_salary) & (supply_salary <= 278636), 0.2*222909, bonusf)
         bonusf = np.where((278636 < supply_salary) & (supply_salary <= 501545), 0.2*222909 - 0.2*(supply_salary-278636), bonusf)
         
-        btmf = btm_noise*bonusf
+        btmf = btm_noise[0]*bonusf
 
         return btmf
         
@@ -191,15 +193,15 @@ class Utility(object):
 
         """
         #disuti_t0 = np.zeros(self.N)
-        disuti_t1 = np.zeros(self.N)
-        disuti_t3 = np.zeros(self.N)
+        #disuti_t1 = np.zeros(self.N)
+        #disuti_t3 = np.zeros(self.N)
        
         #disuti_t0[np.logical_and(work_d == 0, btm_decision == 0)] = 1
-        disuti_t1[np.logical_and(work_d == 1, btm_decision == 1)] = 1
-        disuti_t3[np.logical_and(work_d == 1, btm_decision == 0)] = 1
+        #disuti_t1[np.logical_and(work_d == 1, btm_decision == 1)] = 1
+        #disuti_t3[np.logical_and(work_d == 1, btm_decision == 0)] = 1
         #costo directo, desutilidad (estigma)
         
-        utility = income - self.param.delta[0]*disuti_t1 - self.param.delta[2]*disuti_t3
+        utility = income - self.param.delta[0]*work_d - self.param.delta[2]*btm_decision
         #si tomas el btm puede impacto negativo
         #Utility = ln(income) - alpha*dummy_trabajo - alpha2*dummy_btm_choice
         
