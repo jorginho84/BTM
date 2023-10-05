@@ -4,7 +4,7 @@ Created on Wed Aug  9 17:11:17 2023
 
 @author: Patricio De Araya
 """
-
+from __future__ import division
 import numpy as np
 import pandas as pd
 import sys
@@ -13,6 +13,7 @@ from scipy import stats
 import math
 from math import *
 from scipy.optimize import minimize
+
 
 
 class SimData:
@@ -52,13 +53,12 @@ class SimData:
         
         income_noise = self.model.income(work_d,supply_salary,btm_decision,btm_bonus_noise)
         
-        # falta también, uno escogía tomar el btm
-        # trabajar o no trabajar tomar o no el btm
-        # generar btm decision
+        # elegibilidad score_noise para la return[[1]]
 
         
-        return [self.model.utility(income,work_d,btm_decision), self.model.utility(income_noise,work_d,btm_decision), 
-                btm_score, btm_score_noise]
+        return [self.model.utility(income,work_d,btm_decision,btm_score),
+                self.model.utility(income_noise,work_d,btm_decision,btm_score_noise[0]),
+                btm_score, btm_score_noise[0]]
     
     
     def choice(self):
@@ -82,17 +82,6 @@ class SimData:
         u_v2 = np.array([u_0[1], u_1[1], u_3[1]]).T
         u_v3 = np.array([u_v2[:,0], u_v2[:,1]]).T
         
-        ###  Not eligible, applicants ###
-        moment_nea = np.zeros(self.N)
-        btm_score_opt = u_3[2]
-        btm_noise_opt = u_3[3][0]
-        
-        moment_nea[np.logical_and(btm_score_opt == 0, btm_noise_opt == 1)] = 1
-        
-        ###  Not eligible, score btm == score btm noise ###
-        moment_nesbsbn = np.zeros(self.N)
-        moment_nesbsbn[np.logical_and(btm_score_opt == btm_noise_opt, btm_score_opt == 0)] = 1
-        
         #option_opt = np.argmax(u_v2, axis=1)
         option_opt_si1 = np.argmax(u_v2, axis=1)
         option_opt_si0 = np.argmax(u_v3, axis=1)
@@ -104,21 +93,35 @@ class SimData:
 
         option_opt_all[np.logical_and(option_opt_all == 0, option_opt_si0 == 1)] = 1
         
-        ### Eligible, not applicants ###
-        btm_shockinfo_opt = np.zeros(self.N)
-        btm_shockinfo_opt[np.logical_and(shock_information == 0, option_opt_si1 == 2)] = 1 
-        
         work_opt = np.zeros(self.N)
         btm_opt = np.zeros(self.N)
         
-        work_opt[option_opt_all==0]=0
-        btm_opt[option_opt_all==0]=0
-        work_opt[option_opt_all==1]=1
-        btm_opt[option_opt_all==1]=0
-        work_opt[option_opt_all==2]=1
-        btm_opt[option_opt_all==2]=1
+        work_opt[option_opt_all>=1]=1
+        btm_opt[option_opt_all>=2]=1
+        
+        #work_opt[option_opt_all==0]=0
+        #btm_opt[option_opt_all==0]=0
+        #work_opt[option_opt_all==1]=1
+        #btm_opt[option_opt_all==1]=0
+        #work_opt[option_opt_all==2]=1
+        #btm_opt[option_opt_all==2]=1
         # arreglar: aquí pasa a lo real
         # self y que no entre
+        
+        btm_score_opt = u_3[2]
+        
+        ###  Not eligible, applicants ###
+        moment_nea = np.zeros(self.N)
+        moment_nea[np.logical_and(btm_score_opt == 0, btm_opt == 1)] = 1
+        
+        ### Eligible, not applicants ###
+        btm_shockinfo_opt = np.zeros(self.N)
+        btm_shockinfo_opt[np.logical_and(btm_score_opt == 1, btm_opt == 0)] = 1 
+        
+        ###  score btm == score btm noise ###
+        #moment_nesbsbn = np.zeros(self.N)
+        #moment_nesbsbn[np.logical_and(btm_score_opt == btm_opt, btm_opt == 1)] = 1
+        
         supply_salary = self.model.supply_salary()
         
         btm_score = self.model.btm_score()
@@ -135,10 +138,10 @@ class SimData:
         
         #income_noise = self.model.income(work_opt,supply_salary,btm_opt,btm_bonus_noise,shock_information)
         
-        utility_max = self.model.utility(income,work_opt,btm_opt)
+        utility_max = self.model.utility(income,work_opt,btm_opt,btm_score)
         
 
                                 
         return {'Opt Work': work_opt, 'Opt BTM': btm_opt, 'Opt Income': income,
                 'Opt Utility': utility_max, 'NEA MOMENT': moment_nea, 'ENA MOMENT': btm_shockinfo_opt,
-                'Equal score': moment_nesbsbn}
+                'Supply Salary': supply_salary}
