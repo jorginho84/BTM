@@ -137,7 +137,7 @@ class SimData:
         income = self.model.income(work_opt,supply_salary,btm_opt,btm_bonus)
         
         #income_noise = self.model.income(work_opt,supply_salary,btm_opt,btm_bonus_noise,shock_information)
-        
+        # opt BTM == take_up
         utility_max = self.model.utility(income,work_opt,btm_opt,btm_score)
         
 

@@ -90,11 +90,9 @@ class estimate:
             emean_applynot[i] = np.mean(np.array(datadf['APPLY_NOT']))
             
             data_disc = datadf[(datadf['DISCONTINUITY'] >= -15) & (datadf['DISCONTINUITY'] <= 15)]
-            
-            # traigo el psfe
-            
-            emean_scorequal[i] = np.mean((data_disc['OPTBTM'] == 1) & (data_disc['DISCONTINUITY'] <= 0)) - \
-                np.mean((data_disc['OPTBTM'] == 1) & (data_disc['DISCONTINUITY'] >= 0))
+            data_disc = data_disc[data_disc['OPTWORK']== 1]
+            # take up es btm_opt mean
+            emean_scorequal[i] = np.mean((data_disc['OPTBTM']))
                 
                 
             data_reg = pd.DataFrame(df,columns = ['OPTWORK','SSalary', 'EDUCATION', 'AGE', 'AGE_2'])

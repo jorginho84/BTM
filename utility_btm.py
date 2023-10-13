@@ -77,7 +77,7 @@ class Utility(object):
     def btm_score(self):
         
         get_bonus = np.zeros(self.N)
-        #menor igual
+        #acá la variable es menor o igual a cero
         get_bonus = np.where(((self.psfe<=98) & (self.year == 2012)) | ((self.psfe<=98) & (self.year == 2013)) | ((self.psfe<=104) & (self.year == 2014)) | 
                              ((self.psfe<=113) & (self.year == 2015)), 1, get_bonus)
         
