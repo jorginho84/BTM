@@ -18,13 +18,20 @@ class Utility(object):
     """
     
     
-    def __init__(self,param,N,ecivil,children):
+    def __init__(self,param,N,ecivil,children,X,psfe,year,educ,age,age_2):
         
         self.param = param
         self.N = N
         self.ecivil = ecivil
         self.children = children
+        self.psfe = psfe
         # don't forget to definite X: characteristics
+        self.X = X
+        self.year = year
+        self.educ = educ
+        self.age = age
+        self.age_2 = age_2
+        
         
     #def economic_status(self,fps):
         
@@ -34,7 +41,7 @@ class Utility(object):
         
         #pe =
         
-        #peh =
+        #p eh =
         
         #pfse = 
         
@@ -45,29 +52,44 @@ class Utility(object):
         """
         Returns
         -------
-        supply_salary : women's salary 
-                with shock.
+        supply_salary : women's salary with shock.
 
         """
         
         number_w = self.N
         #agregar parámetro de varianza del shock, la varianza se estima,
         #la media es cero
-        shock_in = np.random.randn(number_w)
+        #np.random.multivariate_normal
+        # Arreglar el shock (mean = 0)
+        #normal, media cero, varianza parámetro
+        shock_in = np.random.normal(0,self.param.gammas_x[4],(number_w))
         
-        supply_salary = self.X.dot(self.gammas_x) + shock_in
+        supply_salary = self.param.gammas_x[0] + self.educ*(self.param.gammas_x[1]) + \
+            self.age*(self.param.gammas_x[2]) + self.age_2*(self.param.gammas_x[3])
         
-        e_salary = np.log(supply_salary)
+        salaryv = supply_salary + shock_in
+        #cambiar el código hacia adelante y dejar esto como x_0 = 1 , 1.2 1.05, 1.000111, 0.1
+        #esto retorne ln 
+        ln_salary = np.exp(salaryv)
         
-        return e_salary
+        return ln_salary
     
+    def btm_score(self):
+        
+        get_bonus = np.zeros(self.N)
+        #acá la variable es menor o igual a cero
+        get_bonus = np.where(((self.psfe<=98) & (self.year == 2012)) | ((self.psfe<=98) & (self.year == 2013)) | ((self.psfe<=104) & (self.year == 2014)) | 
+                             ((self.psfe<=113) & (self.year == 2015)), 1, get_bonus)
+        
+        #modificar btm_score y btm_score_noise
+        
+        return get_bonus
+        
     
-    def btm(self,psfe,year,supply_salary):
+    def btm_bonus(self,btm_score,supply_salary):
         """
         Parameters
         ----------
-        psfe : socieconomic score.
-        year : bonus year.
         supply_salary : salary.
 
         Returns
@@ -76,37 +98,66 @@ class Utility(object):
 
         """
         
-        get_bonus = np.zeros(self.N)
-        #menor igual
-        get_bonus = np.where(((psfe<=98) & (year == 2012)) | ((psfe<=98) & (year == 2013)) | ((psfe<=104) & (year == 2014)) | 
-                             ((psfe<=113) & (year == 2015)), 1, get_bonus)
+        ss_wlogbtm = supply_salary
         
         bonus = np.zeros(self.N)
         #salario anual
-        bonus = np.where((supply_salary <= 222909), 0.2*supply_salary, bonus)
-        bonus = np.where((222909 < supply_salary) & (supply_salary <= 278636), 0.2*222909, bonus)
-        bonus = np.where((278636 < supply_salary) & (supply_salary <= 501545), 0.2*222909 - 0.2*(supply_salary-278636), bonus)
+        bonus = np.where((ss_wlogbtm <= 222909), 0.2*ss_wlogbtm, bonus)
+        bonus = np.where((222909 < ss_wlogbtm) & (ss_wlogbtm <= 278636), 0.2*222909, bonus)
+        bonus = np.where((278636 < ss_wlogbtm) & (ss_wlogbtm <= 501545), 0.2*222909 - 0.2*(ss_wlogbtm-278636), bonus)
         
-        btm = get_bonus*bonus
-        # np.log() ???
-        return [btm, get_bonus]
+        btm = btm_score*bonus
+        
+        return btm
     
-    def information(self):
+    
+    def btm_noise(self):
         """
-        dummy information.
+        focalization score with noise
 
         Returns
         -------
-        shock_information.
+        false focalization score.
 
         """
+        psfe_false = np.zeros(self.N)
         
-        shock_information = np.random.binomial(1,self.param.s_info,self.N)
+        v_fs = np.random.normal(0, self.param.shocks[0], self.N)
         
-        return shock_information
+        psfe_false = self.psfe + v_fs
+        
+        get_bonusf = np.zeros(self.N)
+        #menor igual
+        get_bonusf = np.where(((psfe_false<=98) & (self.year == 2012)) | ((psfe_false<=98) & (self.year == 2013)) | ((psfe_false<=104) & (self.year == 2014)) | 
+                             ((psfe_false<=113) & (self.year == 2015)), 1, get_bonusf)
+        
+        return [get_bonusf, psfe_false]
     
-    
-    def income(self,work_d,supply_salary,btm,shock_information):
+    def btmfalse(self,btm_noise,supply_salary):
+        """
+        Parameters
+        ----------
+        psfe_false : score with noise.
+
+        Returns
+        -------
+        bt with noise.
+
+        """
+        ss_wlogwbtm = supply_salary
+        
+        bonusf = np.zeros(self.N)
+        #salario anual
+        bonusf = np.where((ss_wlogwbtm <= 222909), 0.2*ss_wlogwbtm, bonusf)
+        bonusf = np.where((222909 < ss_wlogwbtm) & (ss_wlogwbtm <= 278636), 0.2*222909, bonusf)
+        bonusf = np.where((278636 < ss_wlogwbtm) & (ss_wlogwbtm <= 501545), 0.2*222909 - 0.2*(ss_wlogwbtm-278636), bonusf)
+        
+        btmf = btm_noise[0]*bonusf
+
+        return btmf
+        
+       
+    def income(self,work_d,supply_salary,btm_score,btm_bonus):
         """
         Parameters
         ----------
@@ -119,18 +170,26 @@ class Utility(object):
         Women's income.
 
         """
-        
+        supply_salaryIn = np.log(supply_salary)
         income = np.zeros(self.N)
-        btm[1][work_d==0] = 0
-        btm[0][btm[1]==0] = 0
+        btm_score[work_d==0] = 0
+        btm_bonus[btm_score==0] = 0
+        
+        btm_log = np.zeros_like(btm_bonus)
+        
+        idx = btm_bonus > 0
+        
+        np.log(btm_bonus, out=btm_log, where=idx)
+        
+        #np.where(btm_bonus == 0, 0, np.log(btm_bonus))
         
         for i in range(4):
-            income = np.where((work_d == 1) & (btm[1] == 1) & (self.ecivil == 1) & (self.children == i), self.param.mar_workload[0][i] + (supply_salary*(self.param.mar_workload[1][i])) + shock_information*btm[0], income)
-            income = np.where((work_d == 1) & (btm[1] == 1) & (self.ecivil != 1) & (self.children == i), self.param.dmar_workload[0][i] + (supply_salary*(self.param.dmar_workload[1][i])) + shock_information*btm[0], income)
-            income = np.where((work_d == 1) & (btm[1] == 0) & (self.ecivil == 1) & (self.children == i), self.param.dmar_workload[0][i] + (supply_salary*(self.param.dmar_workload[1][i])) + shock_information*btm[0], income)
-            income = np.where((work_d == 1) & (btm[1] == 0) & (self.ecivil != 1) & (self.children == i), self.param.dmar_workload[0][i] + (supply_salary*(self.param.dmar_workload[1][i])) + shock_information*btm[0], income)
-            income = np.where((work_d == 0) & (btm[1] == 0) & (self.ecivil == 1) & (self.children == i), self.param.dont_workload[0][i] + btm[0], income)
-            income = np.where((work_d == 0) & (btm[1] == 0) & (self.ecivil != 1) & (self.children == i), self.param.dont_workload[1][i] + btm[0], income)
+            income = np.where((work_d == 1) & (btm_score == 1) & (self.ecivil == 1) & (self.children == i), self.param.mar_workload[0][i] + (supply_salaryIn*(self.param.mar_workload[1][i])) + btm_log, income)
+            income = np.where((work_d == 1) & (btm_score == 1) & (self.ecivil != 1) & (self.children == i), self.param.dmar_workload[0][i] + (supply_salaryIn*(self.param.dmar_workload[1][i])) + btm_log, income)
+            income = np.where((work_d == 1) & (btm_score == 0) & (self.ecivil == 1) & (self.children == i), self.param.mar_workload[0][i] + (supply_salaryIn*(self.param.mar_workload[1][i])), income)
+            income = np.where((work_d == 1) & (btm_score == 0) & (self.ecivil != 1) & (self.children == i), self.param.dmar_workload[0][i] + (supply_salaryIn*(self.param.dmar_workload[1][i])), income)
+            income = np.where((work_d == 0) & (btm_score == 0) & (self.ecivil == 1) & (self.children == i), self.param.dont_workload[0][i], income)
+            income = np.where((work_d == 0) & (btm_score == 0) & (self.ecivil != 1) & (self.children == i), self.param.dont_workload[1][i], income)
             
             
             # ingreso total debe ir salary aunque no tenga btm
@@ -142,7 +201,7 @@ class Utility(object):
         
         return income
     
-    def util(self,income,work_d,btm):
+    def utility(self,income,work_d,btm_decision,btm_score):
         """
         Parameters
         ----------
@@ -154,19 +213,11 @@ class Utility(object):
 
         """
         
-        disuti_t1 = np.zeros(self.N)
-        disuti_t3 = np.zeros(self.N)
-       
+        utility = income - self.param.delta[0]*work_d - self.param.delta[1]*btm_decision*btm_score
+        #restringir por la elegibilidad del btm optimo, btm_score
+
         
-        disuti_t1[np.logical_and(work_d == 1, btm[1] == 1)] = 1
-        disuti_t3[np.logical_and(work_d == 1, btm[1] == 0)] = 1
-        #costo directo, desutilidad (estigma)
-        
-        util = income - self.param.delta[0]*disuti_t1 - self.param.delta[2]*disuti_t3
-        #si tomas el btm puede impacto negativo
-        #Utility = ln(income) - alpha*dummy_trabajo - alpha2*dummy_btm_choice
-        
-        return util
+        return utility
     
         
                 
