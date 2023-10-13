@@ -32,7 +32,7 @@ import time
 
 #### **** Parameters **** ####
 
-gammas_x = [0.1,0.2]
+gammas_x = [0.1,0.2,0.3]
 alphas_es = [0.75, 0.25, 98, 6320]
 delta = [5, 8, 3]
 
@@ -40,13 +40,16 @@ mar_workload = np.load('mar_work_model.npy', allow_pickle=True)
 dmar_workload = np.load('dmar_work_model.npy', allow_pickle=True)
 dont_workload = np.load('dont_work_model.npy', allow_pickle=True)
 
-s_info = 0.5
+#sigma_foc_score = np.random.randint(0,30,(3000))
+#sigma_foc_score = 15 s_info = 0.5
+# Shocks = [shock btm_noise,shock info]
+# Shocks = [sigma_foc_score,s_info]
 
-sigma_foc_score = np.random.randint(5,10,(3000))
+shocks = [15, 0.5]
 
 ######################## **** **** ########################
 
-print(mar_workload[0][3])
+#print(mar_workload[0][3])
 
 
 shock_test_n = np.random.randn(3)
@@ -58,10 +61,12 @@ c = a.dot(b)
 #y = np.log(c) + np.log(shock_test_n)
 educ = np.random.randint(5,13,(3000))
 age = np.random.randint(25,59,(3000))
-data_reg_btm_v1 = {'educ': educ, 'age': age}
+age_2 = np.power(age,2)
+data_reg_btm_v1 = {'educ': educ, 'age': age, 'age2': age_2}
 data_reg_btm = pd.DataFrame(data_reg_btm_v1)
 X = data_reg_btm.values
 
+#data_disc_X = data_reg_btm[(data_reg_btm['age'] >= 30) & (data_reg_btm['age'] <= 50)]
 
 
 #creo variables que estén tabla, también betas en log
@@ -72,13 +77,12 @@ N = np.size(psfe)
 ecivil = np.random.randint(0,2,(3000))
 children = np.random.randint(0,4,(3000))
 #shock_information = np.random.randint(0,2,(3000))
-work_d = np.random.randint(0,2,(3000))
-btm_d = np.random.randint(0,2,(3000))
+#work_d = np.random.randint(0,2,(3000))
+#btm_d = np.random.randint(0,2,(3000))
+cutoff = np.random.randint(-13,20,(3000))
 
 
-
-param0 = parameters.Parameters(gammas_x,mar_workload,dmar_workload,dont_workload,s_info,delta,
-                               sigma_foc_score)
+param0 = parameters.Parameters(gammas_x,mar_workload,dmar_workload,dont_workload,shocks,delta)
 
 model = util.Utility(param0,N,ecivil,children,X,psfe,year)
 
@@ -90,7 +94,7 @@ supply_salary
 
 # btm vector bonus
 get_bonus = model.btm_score()
-
+get_bonus
 #Real score btm
 print("Vector Bonus")
 btm_score = model.btm_score()
@@ -102,6 +106,9 @@ print("Shock btm")
 btm_noise = model.btm_noise()
 btm_false = model.btmfalse(btm_noise,supply_salary)
 print(btm_false)
+
+#moment_nea_vms = np.zeros(N)
+#moment_nea_vms[np.logical_and(btm_score == 0, btm_noise[0] == 1)] = 1
 
 #disuti_texamp = np.zeros(N)
         
@@ -123,7 +130,7 @@ utilidad = model.utility(income,work_d,btm)
 print(utilidad)
 
 print("Utility simdata")
-modelSD = sd.SimData(N,model)
+modelSD = sd.SimData(param0,N,model)
 
 util_all = modelSD.util(work_d,btm_d)
 print(util_all[0])
@@ -134,9 +141,11 @@ print(data_sim_btm["Opt Utility"])
 print(data_sim_btm["Opt Work"])
 print(data_sim_btm["Opt BTM"])
 print(data_sim_btm["Opt Income"])
+print(data_sim_btm["BTM noise"])
 
 btm_opt = data_sim_btm["Opt BTM"]
 work_opt = data_sim_btm["Opt Work"]
+btm_noise_opt = data_sim_btm["BTM noise"]
 
 
 
